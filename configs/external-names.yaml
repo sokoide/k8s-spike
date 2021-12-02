@@ -1,0 +1,8 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: lab3
+  namespace: logging
+spec:
+  type: ExternalName
+  externalName: lab3.lab.sokoide.com

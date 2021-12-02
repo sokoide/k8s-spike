@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-sidecar-config
+  namespace: default
+  labels:
+    k8s-app: fluent-bit
+data:
+  # Configuration files: server, input, filters and output
+  # ======================================================
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Daemon        off
+        Parsers_File  parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+    @INCLUDE input-local.conf
+    @INCLUDE output-loki.conf
+
+  input-local.conf: |
+    [INPUT]
+        Name              tail
+        Tag               local.*
+        Path              /logs/*.log
+        DB                /var/log/flb_local.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+
+  output-loki.conf: |
+    [OUTPUT]
+        name                    loki
+        match                   *
+        auto_kubernetes_labels  on
+        host                    ${FLUENT_LOKI_HOST}
+        port                    ${FLUENT_LOKI_PORT}
+        labels                  job=${FLUENT_JOB}

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testapp2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testapp2
+  template:
+    metadata:
+      labels:
+        app: testapp2
+    spec:
+      shareProcessNamespace: true
+      containers:
+      - name: testapp2
+        image: sokoide/testapp2:latest
+        ports:
+        - containerPort: 10001
+        env:
+        - name: PORT
+          value: "10001"
+        volumeMounts:
+        - name: shared-data
+          mountPath: /logs
+      - name: fluent-bit
+        image: fluent/fluent-bit:1.8
+        ports:
+          - containerPort: 2020
+        env:
+        - name: FLUENT_LOKI_HOST
+          value: "lab3"
+        - name: FLUENT_LOKI_PORT
+          value: "3100"
+        - name: FLUENT_JOB
+          value: "sidecar"
+        volumeMounts:
+        - name: fluent-bit-sidecar-config
+          mountPath: /fluent-bit/etc/
+        - name: shared-data
+          mountPath: /logs
+      volumes:
+      - name: fluent-bit-sidecar-config
+        configMap:
+          name: fluent-bit-sidecar-config
+      - name: shared-data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testapp2-svc
+spec:
+  selector:
+    app: testapp2
+  ports:
+  - protocol: TCP
+    port: 10001
+  type: NodePort
