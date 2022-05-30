@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,6 +30,12 @@ func main() {
 
 	fmt.Printf("testapp2 started at port %s\n", port)
 	log.Infof("testapp2 started at port %s", port)
+
+	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":"+port, nil)
+
+	err = http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		fmt.Println(errors.Unwrap(err))
+	}
 }
